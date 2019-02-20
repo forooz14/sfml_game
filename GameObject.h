@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <map>
 
+namespace Engine {
 typedef uint64_t GameObjectID;
 
 class GameObject
@@ -36,6 +37,7 @@ public:
 	virtual void EveryFrame(uint64_t frameNumber); //runs every frame if implemented
 	GameObjectID getID() { return this->id; }
 private:
+    GameObject(GameObjectID id);
 	GameObjectID id;
 };
 
@@ -51,12 +53,13 @@ public:
 	GraphicalGameObject(sf::VertexArray);
 	GraphicalGameObject(sf::VertexBuffer);
 	virtual void draw(sf::RenderWindow& win);
+    const sf::Drawable* getGraphic();
 	~GraphicalGameObject();
 protected:
 	sf::Drawable* graphic;
 };
 
 
-
+}
 
 #endif

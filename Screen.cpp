@@ -1,39 +1,50 @@
 #include "SFML/Graphics.hpp"
 #include "Screen.h"
 #include "GameObject.h"
-#include <thread>
 #include <memory>
-#include <atomic>
 #include <functional>
 #include <mutex>
-#include "TileMap.hpp"
-
 #include <iostream>
 
-unsigned int Screen::windowWidth = 0;
-unsigned int Screen::windowHeight = 0;
-const char* Screen::windowTitle = nullptr;
 static bool renderStarted = false;
-static Screen* currentScreen;
 static int currentFPS;
 
-void Screen::add(GameObject* gameObject)
-{
-	GameObjectMap& map = (dynamic_cast<GraphicalGameObject*>(gameObject)) ? this->g_objects : this->objects;
-	map[gameObject->getID()] = gameObject;
-}
+namespace Engine {
 
-void Screen::remove(GameObject* gameObject)
-{
-	GameObjectMap& map = (dynamic_cast<GraphicalGameObject*>(gameObject)) ? this->g_objects : this->objects;
-	if (map.find(gameObject->getID()) == map.end()) { return; }
-	GameObjectID id = gameObject->getID();
-	GameObject* obj = map[id];
-	map.erase(id);
-}
+    unsigned int Screen::windowWidth = 0;
+    unsigned int Screen::windowHeight = 0;
+    const char* Screen::windowTitle = nullptr;
+    static Screen* currentScreen;
 
-void Screen::render(int fps)
-{
+    void Screen::addMap(TileMap * map)
+    {
+        this->map = map;
+    }
+    
+    void Screen::addMainCharacter(GameObject* mainCharacter)
+    {
+        this->add(mainCharacter);
+        this->mainCharacter = mainCharacter;
+    }
+
+
+    void Screen::add(GameObject* gameObject)
+    {
+        GameObjectMap& map = (dynamic_cast<GraphicalGameObject*>(gameObject)) ? this->g_objects : this->objects;
+        map[gameObject->getID()] = gameObject;
+    }
+
+    void Screen::remove(GameObject* gameObject)
+    {
+        GameObjectMap& map = (dynamic_cast<GraphicalGameObject*>(gameObject)) ? this->g_objects : this->objects;
+        if (map.find(gameObject->getID()) == map.end()) { return; }
+        GameObjectID id = gameObject->getID();
+        GameObject* obj = map[id];
+        map.erase(id);
+    }
+
+    void Screen::render(int fps)
+    {
 	if (fps < 1) { fps = 1; }
 	else if (fps > 1000) { fps = 1000; }
 	currentScreen = this;
@@ -127,14 +138,15 @@ void Screen::render(int fps)
 	unsigned int height = (Screen::windowHeight) ? Screen::windowHeight : 500;
 	const char* title = (Screen::windowTitle) ? Screen::windowTitle : "<no title>";
 	sf::RenderWindow window(sf::VideoMode(width, height), title);
+    
+    
     sf::Image icon;
-    if (!icon.loadFromFile("bob.png")) {
-        return EXIT_FAILURE;
-    }
+    icon.loadFromFile("bob.png");
     window.setIcon(icon.getSize().x, icon.getSize().y, icon.getPixelsPtr());
+        
     
-   // sf::View view(sf::Vector2f(450.f, 300.f), sf::Vector2f(400.f, 400.f));
-    
+    sf::View view(sf::Vector2f(width/2, height/2), sf::Vector2f(width, height));
+    window.setView(view);
     
     const int level[] =
     {
@@ -163,11 +175,13 @@ void Screen::render(int fps)
         0, 0, 1, 0, 3, 2, 2, 2, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     };
     
-    TileMap map;
-    if (!map.load("tileset.png", sf::Vector2u(32, 32), level, 32, 23))
-        return -1;
+    TileMap * map;
     
+        
+    if (!map->load("tileset.png", sf::Vector2u(32, 32), level, 32, 23))
+        return ;
     
+    addMap(map);
     window.setKeyRepeatEnabled(true);
 
 	sf::Clock clock;
@@ -202,14 +216,27 @@ void Screen::render(int fps)
 		}
 
 		window.clear();
-        window.draw(map);
-      //  window.setView(view);
+        
+       
+        
 		for (auto const& pair : cs->g_objects)
 		{
 			GraphicalGameObject* obj = dynamic_cast<GraphicalGameObject*>(pair.second); //does not need to be checked, they are checked on insertion into the maps
 			obj->draw(window);
 		}
         
+        if (cs->map) { window.draw(*cs->map); }
+        
+        //view moves with character
+        if (GraphicalGameObject* mainCharGraphical = dynamic_cast<GraphicalGameObject*>(mainCharacter))
+        {
+            if (const sf::Transformable* graphicAsTransformable = dynamic_cast<const sf::Transformable*>(mainCharGraphical->getGraphic()))
+            {
+                view.setCenter(graphicAsTransformable->getPosition());
+            }
+        }
+        
+        window.setView(view);
 		window.display();
         
         // want to do visibility checks? retrieve the view
@@ -219,4 +246,21 @@ void Screen::render(int fps)
 		frameCount++;
 		while (clock.getElapsedTime().asMicroseconds() < (1000000 / currentFPS)) {}
 	}
+}
+    
+    
+    Screen::~Screen()
+    {
+        for (auto const& pair : this->objects)
+        {
+            auto obj = pair.second;
+            delete obj;
+        }
+        
+        for (auto const& pair : this->g_objects)
+        {
+            auto obj = pair.second;
+            delete obj;
+        }
+    }
 }

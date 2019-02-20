@@ -4,6 +4,7 @@
 #include <vector>
 #include "Screen.h"
 #include "GameObject.h"
+using namespace Engine;
 
 Screen startingScreen;
 
@@ -40,79 +41,90 @@ public:
 
 
 
-
-class Character : public GraphicalGameObject{
-   
-
-public:
-
-    Character (sf::Sprite s):GraphicalGameObject(s, 450, 250 ){
-    }
-    
-    // mouse controls attacks
-    /*void MouseButtonReleased(sf::Event e)
-    {
-        this->character()->move(e.mouseButton.x, e.mouseButton.y);
-    }*/
-    
-    void KeyPressed(sf::Event event)
-    {
-        
-        if( sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-            this->character()->move(0, -10);
-        if( sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-            this->character()->move(-10, 0);
-        if( sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-            this->character()->move(0, 10);
-        if( sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-            this->character()->move(10, 0);
-        /*
-        switch (event.key.code)
-        {
-            case sf::Keyboard::W:
-                this->character()->move(0, -20);
-                break;
-            case sf::Keyboard::A:
-                this->character()->move(-20, 0);
-                break;
-            case sf::Keyboard::S:
-                this->character()->move(0, 20);
-                break;
-            case sf::Keyboard::D:
-                this->character()->move(20, 0);
-                break;
-            default:
-                break;
-                
-        }
-        */
-        
-    }
-    
-    sf::Sprite* character()
-    {
-        return dynamic_cast<sf::Sprite*>(this->graphic);
-    }
-    
-    ~Character() {}
-};
-
-
-
 class ExampleClickHandler : public GameObject
 {
 public:
     void MouseButtonReleased(sf::Event e)
     {
         std::cout << "Mouse clicked at (" << e.mouseButton.x << ", " << e.mouseButton.y << ")" << std::endl;
-        Character* s; //use a heap allocated object which has to be cleaned up later.
+        SampleSquare* s = new SampleSquare(); //use a heap allocated object which has to be cleaned up later.
         objs.push_back(s);
-        s->character()->setPosition(e.mouseButton.x, e.mouseButton.y);
+        s->square()->setPosition(e.mouseButton.x, e.mouseButton.y);
         startingScreen.add(s);
     }
 private:
     std::vector<GraphicalGameObject*> objs;
 };
+
+
+
+
+class Character : public GraphicalGameObject
+{
+    bool W_KeyHeld = false;
+    bool A_KeyHeld = false;
+    bool S_KeyHeld = false;
+    bool D_KeyHeld = false;
+public:
+   // Character(sf::RectangleShape r) : GraphicalGameObject(r) { }
+    Character (sf::Sprite s):GraphicalGameObject(s, 450, 250 ){
+    }
+    void KeyPressed(sf::Event e)
+    {
+        switch (e.key.code)
+        {
+            case sf::Keyboard::W:
+                this->W_KeyHeld = true;
+                break;
+            case sf::Keyboard::A:
+                this->A_KeyHeld = true;
+                break;
+            case sf::Keyboard::S:
+                this->S_KeyHeld = true;
+                break;
+            case sf::Keyboard::D:
+                this->D_KeyHeld = true;
+                break;
+            default:
+                break;
+                
+        }
+    }
+    void KeyReleased(sf::Event e)
+    {
+        switch (e.key.code)
+        {
+            case sf::Keyboard::W:
+                this->W_KeyHeld = false;
+                break;
+            case sf::Keyboard::A:
+                this->A_KeyHeld = false;
+                break;
+            case sf::Keyboard::S:
+                this->S_KeyHeld = false;
+                break;
+            case sf::Keyboard::D:
+                this->D_KeyHeld = false;
+                break;
+            default:
+                break;
+                
+        }
+    }
+    void EveryFrame(uint64_t f)
+    {
+        sf::RectangleShape* r = this->placeholder();
+        if (this->W_KeyHeld) { r->move(0, -10); }
+        if (this->A_KeyHeld) { r->move(-10, 0); }
+        if (this->S_KeyHeld) { r->move(0, 10); }
+        if (this->D_KeyHeld) { r->move(10, 0); }
+    }
+    sf::RectangleShape* placeholder()
+    {
+        return dynamic_cast<sf::RectangleShape*>(this->graphic);
+    }
+};
+
 
 
 int main(int argc, char** argv)
@@ -132,11 +144,12 @@ int main(int argc, char** argv)
     m_Sprite.setTexture(m_Texture);
     
     Character character(m_Sprite);
+
     
 
     
 	//a class which derives from GameObject and has an event handler
-	ExampleClickHandler clicks;
+	//ExampleClickHandler clicks;
 
 	//a class which derives from GraphicalGameObject and puts a circle on the screen with an event to move it when the user clicks
 	//SampleCircle s;

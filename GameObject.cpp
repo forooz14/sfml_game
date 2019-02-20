@@ -1,7 +1,8 @@
 #include "GameObject.h"
 #include "SFML/Graphics.hpp"
 #include <iostream>
-
+namespace Engine
+{
 GameObjectID generateID()
 {
 	static GameObjectID count;
@@ -20,8 +21,6 @@ GraphicalGameObject::GraphicalGameObject(sf::Sprite s, float x, float y)
 {
     s.setPosition(x,y);
 	this->graphic = new sf::Sprite(s);
-    
-    
   
 }
 
@@ -65,9 +64,14 @@ GraphicalGameObject::~GraphicalGameObject()
 {
 	delete this->graphic;
 }
+    const sf::Drawable* GraphicalGameObject::getGraphic()
+    {
+        return this->graphic;
+    }
 
 void GameObject::EveryFrame(uint64_t frameNumber)
 {
+    
 
 }
 void GameObject::Resized(sf::Event event)
@@ -161,7 +165,7 @@ void GameObject::SensorChanged(sf::Event event)
 
 
 
-
+}
 
 
 
